@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { CyberButton } from '../components/CyberButton';
 import { Product3DPreview } from '../components/Product3DPreview';
+import { ReviewSection } from '../components/ReviewSection';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -274,6 +275,14 @@ export default function ProductDetail() {
               {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
             </p>
           </motion.div>
+        </div>
+
+        {/* Review Section */}
+        <div className="max-w-7xl mx-auto px-6 mt-16">
+          <h2 className="font-syne text-3xl font-bold uppercase tracking-tighter mb-8">
+            Customer Reviews
+          </h2>
+          <ReviewSection productId={id} />
         </div>
       </div>
     </div>

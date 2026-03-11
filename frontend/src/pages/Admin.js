@@ -15,6 +15,7 @@ export default function Admin() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // New category/product forms
@@ -42,17 +43,19 @@ export default function Admin() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [statsRes, catRes, prodRes, ordersRes] = await Promise.all([
+      const [statsRes, catRes, prodRes, ordersRes, reviewsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/categories`, { headers }),
         axios.get(`${API}/products`, { headers }),
-        axios.get(`${API}/admin/orders`, { headers })
+        axios.get(`${API}/admin/orders`, { headers }),
+        axios.get(`${API}/admin/reviews`, { headers })
       ]);
 
       setStats(statsRes.data);
       setCategories(catRes.data);
       setProducts(prodRes.data);
       setOrders(ordersRes.data);
+      setReviews(reviewsRes.data);
     } catch (err) {
       console.error('Error loading admin data:', err);
       toast.error('Failed to load admin data');
@@ -132,6 +135,20 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteReview = async (id) => {
+    if (!confirm('Delete this review?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/reviews/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Review deleted');
+      loadData();
+    } catch (err) {
+      toast.error('Failed to delete review');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -155,7 +172,7 @@ export default function Admin() {
 
           {/* Tabs */}
           <div className="flex gap-4 mb-8 border-b border-white/10" data-testid="admin-tabs">
-            {['dashboard', 'categories', 'products', 'orders'].map(tab => (
+            {['dashboard', 'categories', 'products', 'orders', 'reviews'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -373,6 +390,53 @@ export default function Admin() {
                   <p className="font-mono text-xs text-zinc-500 mt-4">
                     {order.items.length} item(s)
                   </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Reviews Tab */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-4" data-testid="reviews-section">
+              <p className="font-mono text-sm text-zinc-400 mb-4">
+                Total Reviews: {reviews.length} (Seed reviews marked with "Early Customer Feedback")
+              </p>
+              {reviews.map(review => (
+                <div key={review.id} className="bg-void-card border border-white/5 p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <p className="font-syne font-bold">{review.user_name}</p>
+                        {review.is_verified_buyer && (
+                          <span className="bg-cyber-cyan/20 text-cyber-cyan px-2 py-0.5 text-xs font-mono">
+                            VERIFIED
+                          </span>
+                        )}
+                        {review.is_seed_review && (
+                          <span className="bg-zinc-700 text-zinc-300 px-2 py-0.5 text-xs font-mono">
+                            SEED REVIEW
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-cyber-cyan">{'\u2605'.repeat(review.rating)}</span>
+                        <span className="text-zinc-600">{'\u2605'.repeat(5 - review.rating)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteReview(review.id)}
+                      data-testid={`delete-review-${review.id}`}
+                      className="text-zinc-400 hover:text-cyber-red transition-colors"
+                    >
+                      <FiTrash2 size={20} />
+                    </button>
+                  </div>
+                  <p className="text-zinc-300 mb-2">{review.comment}</p>
+                  <div className="flex items-center gap-4 text-xs text-zinc-500">
+                    <span>{new Date(review.created_at).toLocaleDateString()}</span>
+                    <span>👍 {review.helpful_count}</span>
+                    <span>Product ID: {review.product_id.slice(0, 8)}...</span>
+                  </div>
                 </div>
               ))}
             </div>

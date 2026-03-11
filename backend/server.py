@@ -167,7 +167,36 @@ class PolicyUpdate(BaseModel):
     title: str
     content: str
 
-class ChatMessage(BaseModel):
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    product_id: str
+    user_id: str
+    user_name: str
+    rating: int  # 1-5 stars
+    comment: str
+    photos: List[str] = []  # URLs of uploaded review photos
+    is_verified_buyer: bool = False
+    is_seed_review: bool = False  # For initial seed reviews
+    helpful_count: int = 0
+    not_helpful_count: int = 0
+    helpful_by: List[str] = []  # user_ids who marked as helpful
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReviewCreate(BaseModel):
+    product_id: str
+    rating: int
+    comment: str
+    photos: List[str] = []
+
+class ReviewStats(BaseModel):
+    average_rating: float
+    total_reviews: int
+    rating_distribution: Dict[str, int]  # "5": count, "4": count, etc.
+
+class HelpfulVote(BaseModel):
+    review_id: str
+    is_helpful: bool
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
@@ -565,6 +594,163 @@ async def verify_payment(
             {"$set": {"payment_status": "failed"}}
         )
         raise HTTPException(status_code=400, detail="Payment verification failed")
+
+
+# ============== REVIEW ENDPOINTS ==============
+
+@api_router.get("/products/{product_id}/reviews", response_model=List[Review])
+async def get_product_reviews(product_id: str, sort_by: str = "recent"):
+    query = {"product_id": product_id}
+    
+    # Determine sort order
+    if sort_by == "highest":
+        sort_field = [("rating", -1), ("created_at", -1)]
+    elif sort_by == "lowest":
+        sort_field = [("rating", 1), ("created_at", -1)]
+    else:  # recent
+        sort_field = [("created_at", -1)]
+    
+    reviews = await db.reviews.find(query, {"_id": 0}).sort(sort_field).to_list(1000)
+    for review in reviews:
+        if isinstance(review.get('created_at'), str):
+            review['created_at'] = datetime.fromisoformat(review['created_at'])
+    return reviews
+
+@api_router.get("/products/{product_id}/review-stats", response_model=ReviewStats)
+async def get_review_stats(product_id: str):
+    reviews = await db.reviews.find({"product_id": product_id}, {"_id": 0, "rating": 1}).to_list(10000)
+    
+    if not reviews:
+        return ReviewStats(
+            average_rating=0.0,
+            total_reviews=0,
+            rating_distribution={"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
+        )
+    
+    total = len(reviews)
+    ratings = [r['rating'] for r in reviews]
+    avg = sum(ratings) / total
+    
+    distribution = {str(i): ratings.count(i) for i in range(1, 6)}
+    
+    return ReviewStats(
+        average_rating=round(avg, 1),
+        total_reviews=total,
+        rating_distribution=distribution
+    )
+
+@api_router.post("/reviews", response_model=Review)
+async def create_review(review_data: ReviewCreate, user: Dict = Depends(get_current_user)):
+    # Check if user has purchased this product
+    has_purchased = await db.orders.find_one({
+        "user_id": user['id'],
+        "payment_status": "paid",
+        "items.product_id": review_data.product_id
+    })
+    
+    # Check if user already reviewed this product
+    existing_review = await db.reviews.find_one({
+        "user_id": user['id'],
+        "product_id": review_data.product_id
+    })
+    
+    if existing_review:
+        raise HTTPException(status_code=400, detail="You have already reviewed this product")
+    
+    review = Review(
+        **review_data.model_dump(),
+        user_id=user['id'],
+        user_name=user['name'],
+        is_verified_buyer=bool(has_purchased)
+    )
+    
+    doc = review.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.reviews.insert_one(doc)
+    
+    return review
+
+@api_router.post("/reviews/{review_id}/helpful")
+async def mark_review_helpful(review_id: str, vote: HelpfulVote, user: Dict = Depends(get_current_user)):
+    review = await db.reviews.find_one({"id": review_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    helpful_by = review.get('helpful_by', [])
+    
+    # Remove previous vote if exists
+    if user['id'] in helpful_by:
+        helpful_by.remove(user['id'])
+        await db.reviews.update_one(
+            {"id": review_id},
+            {"$inc": {"helpful_count": -1 if review.get('helpful_count', 0) > 0 else 0}}
+        )
+    
+    # Add new vote
+    if vote.is_helpful:
+        helpful_by.append(user['id'])
+        await db.reviews.update_one(
+            {"id": review_id},
+            {"$set": {"helpful_by": helpful_by}, "$inc": {"helpful_count": 1}}
+        )
+    else:
+        await db.reviews.update_one(
+            {"id": review_id},
+            {"$set": {"helpful_by": helpful_by}, "$inc": {"not_helpful_count": 1}}
+        )
+    
+    return {"message": "Vote recorded"}
+
+@api_router.get("/reviews/user/can-review/{product_id}")
+async def can_user_review(product_id: str, user: Dict = Depends(get_current_user)):
+    # Check if user has purchased
+    has_purchased = await db.orders.find_one({
+        "user_id": user['id'],
+        "payment_status": "paid",
+        "items.product_id": product_id
+    })
+    
+    # Check if already reviewed
+    existing_review = await db.reviews.find_one({
+        "user_id": user['id'],
+        "product_id": product_id
+    })
+    
+    return {
+        "can_review": bool(has_purchased) and not bool(existing_review),
+        "has_purchased": bool(has_purchased),
+        "already_reviewed": bool(existing_review)
+    }
+
+# ============== ADMIN REVIEW ENDPOINTS ==============
+
+@api_router.get("/admin/reviews", response_model=List[Review])
+async def admin_get_all_reviews(admin: Dict = Depends(get_admin_user)):
+    reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for review in reviews:
+        if isinstance(review.get('created_at'), str):
+            review['created_at'] = datetime.fromisoformat(review['created_at'])
+    return reviews
+
+@api_router.delete("/admin/reviews/{review_id}")
+async def admin_delete_review(review_id: str, admin: Dict = Depends(get_admin_user)):
+    result = await db.reviews.delete_one({"id": review_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Review deleted"}
+
+@api_router.put("/admin/reviews/{review_id}")
+async def admin_update_review(
+    review_id: str,
+    comment: str,
+    rating: int,
+    admin: Dict = Depends(get_admin_user)
+):
+    await db.reviews.update_one(
+        {"id": review_id},
+        {"$set": {"comment": comment, "rating": rating}}
+    )
+    return {"message": "Review updated"}
 
 # ============== CHATBOT ENDPOINT ==============
 
