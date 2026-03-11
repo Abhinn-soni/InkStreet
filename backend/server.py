@@ -12,7 +12,6 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 import razorpay
 import base64
 
@@ -981,64 +980,69 @@ async def mark_reminder_sent(cart_id: str, admin: Dict = Depends(get_admin_user)
 
 # ============== CHATBOT ENDPOINT ==============
 
-@api_router.post("/chatbot")
-async def chatbot(chat_req: ChatRequest):
-    session_id = chat_req.session_id or str(uuid.uuid4())
+# @api_router.post("/chatbot")
+# async def chatbot(chat_req: ChatRequest):
+#     session_id = chat_req.session_id or str(uuid.uuid4())
     
-    # Get chat history for context
-    history = await db.chat_messages.find(
-        {"session_id": session_id},
-        {"_id": 0}
-    ).sort("timestamp", -1).limit(5).to_list(5)
+#     # Get chat history for context
+#     history = await db.chat_messages.find(
+#         {"session_id": session_id},
+#         {"_id": 0}
+#     ).sort("timestamp", -1).limit(5).to_list(5)
     
-    # Build context from history
-    context_messages = []
-    for msg in reversed(history):
-        context_messages.append(f"User: {msg['user_message']}")
-        context_messages.append(f"Assistant: {msg['bot_response']}")
+#     # Build context from history
+#     context_messages = []
+#     for msg in reversed(history):
+#         context_messages.append(f"User: {msg['user_message']}")
+#         context_messages.append(f"Assistant: {msg['bot_response']}")
     
-    system_message = f"""You are an AI customer support assistant for InkStreet, a Gen-Z streetwear and anime apparel brand.
-Help customers with:
-- Order tracking and status
-- Product information and recommendations
-- FAQs about shipping, returns, and policies
-- Customer support queries
+#     system_message = f"""You are an AI customer support assistant for InkStreet, a Gen-Z streetwear and anime apparel brand.
+# Help customers with:
+# - Order tracking and status
+# - Product information and recommendations
+# - FAQs about shipping, returns, and policies
+# - Customer support queries
 
-Be friendly, helpful, and professional. Keep responses concise and clear.
+# Be friendly, helpful, and professional. Keep responses concise and clear.
 
-Previous conversation:
-{chr(10).join(context_messages[-10:]) if context_messages else 'No previous messages'}"""
+# Previous conversation:
+# {chr(10).join(context_messages[-10:]) if context_messages else 'No previous messages'}"""
     
-    try:
-        chat = LlmChat(
-            api_key=os.environ['EMERGENT_LLM_KEY'],
-            session_id=session_id,
-            system_message=system_message
-        ).with_model("openai", "gpt-5.2")
+#     try:
+#         chat = LlmChat(
+#             api_key=os.environ['EMERGENT_LLM_KEY'],
+#             session_id=session_id,
+#             system_message=system_message
+#         ).with_model("openai", "gpt-5.2")
         
-        user_message = UserMessage(text=chat_req.message)
-        response = await chat.send_message(user_message)
+#         user_message = UserMessage(text=chat_req.message)
+#         response = await chat.send_message(user_message)
         
-        # Save to database
-        chat_msg = ChatMessage(
-            session_id=session_id,
-            user_message=chat_req.message,
-            bot_response=response
-        )
-        doc = chat_msg.model_dump()
-        doc['timestamp'] = doc['timestamp'].isoformat()
-        await db.chat_messages.insert_one(doc)
+#         # Save to database
+#         chat_msg = ChatMessage(
+#             session_id=session_id,
+#             user_message=chat_req.message,
+#             bot_response=response
+#         )
+#         doc = chat_msg.model_dump()
+#         doc['timestamp'] = doc['timestamp'].isoformat()
+#         await db.chat_messages.insert_one(doc)
         
-        return {
-            "response": response,
-            "session_id": session_id
-        }
-    except Exception as e:
-        logging.error(f"Chatbot error: {str(e)}")
-        return {
-            "response": "I'm having trouble connecting right now. Please try again later or contact our support team.",
-            "session_id": session_id
-        }
+#         return {
+#             "response": response,
+#             "session_id": session_id
+#         }
+#     except Exception as e:
+#         logging.error(f"Chatbot error: {str(e)}")
+#         return {
+#             "response": "I'm having trouble connecting right now. Please try again later or contact our support team.",
+#             "session_id": session_id
+    @api_router.post("/chatbot")
+    async def chatbot(chat_req: ChatRequest):
+    return {
+        "response": "Chatbot is temporarily unavailable.",
+        "session_id": chat_req.session_id
+         }
 
 # ============== POLICY ENDPOINTS ==============
 
