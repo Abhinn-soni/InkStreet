@@ -1,0 +1,255 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "philosophy": [
+      "Fusion over Imitation: Mix Cyberpunk with High-Fashion Streetwear",
+      "Emotion First: Every interaction must feel 'edgy' and 'digital-native'",
+      "Content is King: The product IS the content. Let the merch speak.",
+      "Negative Space: Use void-like black space to make neon pop.",
+      "Contrast: High contrast (Neon vs Void) is non-negotiable."
+    ],
+    "anti_patterns": [
+      "No Purple/Teal gradients (unless it's specific Cyberpunk Cyan)",
+      "No 'Inter' for headings",
+      "No Center-Everything layouts",
+      "No standard 'Bootstrap' grids",
+      "No generic 'SaaS Blue' buttons"
+    ]
+  },
+  "project_context": {
+    "app_name": "InkStreet",
+    "brand_voice": "Bold, Edgy, Futuristic, Gen-Z, Streetwear, Anime Culture",
+    "theme_mode": "dark",
+    "target_audience": "Gen-Z (16-28), Hypebeasts, Anime Fans"
+  },
+  "design_system": {
+    "typography": {
+      "headings": {
+        "family": "Syne, sans-serif",
+        "url": "https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&display=swap",
+        "weights": ["700", "800"],
+        "usage": "Main headers (H1, H2), Hero text, Collection Titles",
+        "style": "uppercase tracking-tighter"
+      },
+      "subheadings": {
+        "family": "JetBrains Mono, monospace",
+        "url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap",
+        "weights": ["500"],
+        "usage": "Overlines, Price tags, Tech specs, UI Labels",
+        "style": "uppercase tracking-widest text-xs"
+      },
+      "body": {
+        "family": "Inter, sans-serif",
+        "url": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap",
+        "weights": ["300", "400"],
+        "usage": "Long descriptions, blog posts, legal text",
+        "style": "leading-relaxed text-zinc-400"
+      }
+    },
+    "colors": {
+      "palette": {
+        "background": {
+          "default": "#050505",
+          "surface": "#0A0A0A",
+          "card": "#121212",
+          "overlay": "rgba(5, 5, 5, 0.8)"
+        },
+        "foreground": {
+          "default": "#FFFFFF",
+          "muted": "#A1A1AA",
+          "dim": "#52525B"
+        },
+        "primary": {
+          "default": "#00F0FF",
+          "hover": "#00C2CC",
+          "foreground": "#000000"
+        },
+        "secondary": {
+          "default": "#FF003C",
+          "hover": "#CC0030",
+          "foreground": "#FFFFFF"
+        },
+        "accent": {
+          "cyan": "#00F0FF",
+          "magenta": "#FF00FF",
+          "yellow": "#FCEE0A",
+          "green": "#39FF14"
+        },
+        "border": {
+          "default": "#27272A",
+          "active": "#00F0FF"
+        }
+      },
+      "gradients": {
+        "cyber_glow": "linear-gradient(135deg, #00F0FF 0%, #000000 50%, #FF003C 100%)",
+        "void_fade": "linear-gradient(to bottom, transparent, #050505)"
+      }
+    },
+    "spacing": {
+      "scale": "tailwind",
+      "base_unit": "4px",
+      "container_padding": "p-6 md:p-12 lg:p-24",
+      "grid_gap": "gap-8"
+    },
+    "shadows": {
+      "neon_cyan": "0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.3)",
+      "neon_red": "0 0 10px rgba(255, 0, 60, 0.5), 0 0 20px rgba(255, 0, 60, 0.3)",
+      "card_hover": "0 20px 40px -15px rgba(0, 0, 0, 0.5)"
+    },
+    "radius": {
+      "default": "0px",
+      "button": "0px",
+      "card": "0px",
+      "input": "0px",
+      "note": "Sharp edges only for Cyberpunk aesthetic. No rounded corners."
+    }
+  },
+  "layout_strategies": {
+    "grid_system": {
+      "marketing": {
+        "name": "The Tetris Grid",
+        "classes": "grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8",
+        "logic": "Asymmetric spans. Hero (col-span-8), Detail (col-span-4). Use empty cells for negative space."
+      },
+      "shop": {
+        "name": "High Density Shop",
+        "classes": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12",
+        "logic": "Uniform grid, but massive vertical spacing to let products breathe."
+      }
+    },
+    "containers": {
+      "marketing_section": "w-full max-w-7xl mx-auto px-6 py-24",
+      "product_detail": "w-full h-screen grid grid-cols-1 md:grid-cols-2"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": {
+        "classes": "bg-primary text-black font-syne font-bold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,240,255,0.6)] transition-all duration-300 border-none px-8 py-4 clip-path-polygon-[0_0,100%_0,100%_70%,85%_100%,0_100%]",
+        "note": "Use a clip-path to cut the bottom-right corner for a 'tech' feel."
+      },
+      "secondary": {
+        "classes": "bg-transparent border border-white/20 text-white hover:border-primary hover:text-primary transition-all duration-300 px-8 py-4 uppercase font-mono text-xs tracking-widest"
+      }
+    },
+    "cards": {
+      "product": {
+        "style": "group relative overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors duration-300",
+        "image_behavior": "aspect-[3/4] object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-100 group-hover:scale-105"
+      },
+      "feature": {
+        "style": "bg-zinc-900/50 backdrop-blur-md border border-white/10 p-8 hover:bg-zinc-900/80 transition-all duration-300"
+      }
+    },
+    "inputs": {
+      "style": "bg-transparent border-b border-white/20 px-0 py-4 text-white focus:border-primary focus:outline-none placeholder:text-zinc-700 font-mono"
+    },
+    "navigation": {
+      "style": "fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-white/5",
+      "links": "font-syne uppercase text-sm hover:text-primary transition-colors"
+    },
+    "special_elements": {
+      "glitch_text": "Use CSS keyframes to create a random skew/glitch effect on hover for main headers.",
+      "marquee": "Infinite scrolling text 'INKSTREET // GEN-Z // FUTURE' in the background using opacity-5."
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "settings": {
+      "transition_default": { "duration": 0.5, "ease": [0.22, 1, 0.36, 1] },
+      "stagger_children": 0.1
+    },
+    "animations": {
+      "fade_up": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 }
+      },
+      "reveal": {
+        "initial": { "clipPath": "inset(0 100% 0 0)" },
+        "animate": { "clipPath": "inset(0 0 0 0)" }
+      }
+    },
+    "accessibility": "Respect prefers-reduced-motion"
+  },
+  "images": {
+    "hero": [
+      {
+        "url": "https://images.unsplash.com/photo-1587930708915-55a36837263b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Cyberpunk Model",
+        "usage": "Main Hero Background"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1608687087371-2950241246f9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Neon Streetwear",
+        "usage": "Category Header - Streetwear"
+      }
+    ],
+    "products": [
+      {
+        "url": "https://images.unsplash.com/photo-1642522282467-54fae4bc0f44?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHw0fHxibGFjayUyMGhvb2RpZSUyMG1vY2t1cCUyMGZyb250JTIwdmlldyUyMGhpZ2glMjBxdWFsaXR5fGVufDB8fHx8MTc3MzIxMTg5MXww&ixlib=rb-4.1.0&q=85",
+        "alt": "Black Hoodie Mockup",
+        "usage": "Product Template"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1639600280284-6ef3f0d67fe1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwyfHx3aGl0ZSUyMG92ZXJzaXplZCUyMHQtc2hpcnQlMjBtb2NrdXAlMjBmcm9udCUyMHZpZXd8ZW58MHx8fHwxNzczMjExODkyfDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Oversized Tee",
+        "usage": "Product Template"
+      }
+    ],
+    "vibes": [
+      {
+        "url": "https://images.unsplash.com/photo-1752070522773-dbf492cc52c6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwzfHx0b2t5byUyMG5pZ2h0JTIwc3RyZWV0JTIwbmVvbiUyMGN5YmVycHVua3xlbnwwfHx8fDE3NzMyMTE4ODJ8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Tokyo Neon",
+        "usage": "Footer Background / Marquee Background"
+      }
+    ]
+  },
+  "technical_implementation": {
+    "3d_strategy": {
+      "library": "React Three Fiber (R3F)",
+      "usage": "Use R3F for the Custom Print Section. Load a GLTF T-shirt model. Use <Decal /> from @react-three/drei to project user uploaded image onto the mesh.",
+      "fallback": "If 3D performance is bad, fallback to 'react-fabricjs' 2D canvas overlay."
+    },
+    "libraries_to_install": [
+      "framer-motion",
+      "clsx",
+      "tailwind-merge",
+      "three",
+      "@react-three/fiber",
+      "@react-three/drei",
+      "react-icons",
+      "@radix-ui/react-slot",
+      "lucide-react"
+    ],
+    "testing": {
+      "attribute": "data-testid",
+      "format": "kebab-case",
+      "example": "add-to-cart-button"
+    }
+  },
+  "instructions_to_main_agent": {
+    "step_1": "Setup Tailwind config with the 'Neon/Void' palette defined above.",
+    "step_2": "Install fonts (Syne, JetBrains Mono) via Google Fonts in index.css.",
+    "step_3": "Build the 'CustomButton' and 'CyberCard' primitive components first.",
+    "step_4": "Implement the 'Custom Print' page using R3F. Keep the scene simple: <Stage> + <Model> + <OrbitControls>.",
+    "step_5": "For the Admin Panel, keep it cleaner. Use the same palette but reduce animation noise. Focus on data density.",
+    "step_6": "Integrate 'Lenis' for smooth scrolling to give it that premium feel.",
+    "critical": "Do not use standard Shadcn 'Card' without overriding the rounded corners. Set rounded-none everywhere."
+  },
+  "universal_guidelines": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all.",
+    "You MUST NOT center align the app container",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations",
+    "NEVER: use AI assistant Emoji characters",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays, custom cursors.",
+    "Components MUST use named exports",
+    "Pages MUST use default exports",
+    "Use sonner for toasts"
+  ]
+}
