@@ -1,20 +1,46 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ProductCard } from '../components/ProductCard';
 import { CyberButton } from '../components/CyberButton';
 import { CyberParticles } from '../components/CyberParticles';
-import { Hero3DScene } from '../components/Hero3DScene';
+import { Hero3DScrollScene } from '../components/Hero3DScrollScene';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const ctaRef = useRef(null);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    // Animate CTA button on scroll
+    if (ctaRef.current) {
+      gsap.fromTo(
+        ctaRef.current,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          scrollTrigger: {
+            trigger: ctaRef.current,
+            start: 'top 80%',
+            end: 'top 50%',
+            scrub: 1,
+          },
+        }
+      );
+    }
   }, []);
 
   const loadData = async () => {
@@ -35,7 +61,7 @@ export default function Home() {
       {/* Cyber Particles Background */}
       <CyberParticles />
       
-      {/* Hero Section */}
+      {/* Hero Section with Scroll Animation */}
       <section
         data-testid="hero-section"
         className="relative h-screen flex items-center justify-center overflow-hidden"
@@ -44,15 +70,15 @@ export default function Home() {
         <div
           className="absolute inset-0 z-0"
           style={{
-            backgroundImage: `linear-gradient(rgba(5, 5, 5, 0.6), rgba(5, 5, 5, 0.9)), url('https://images.unsplash.com/photo-1587930708915-55a36837263b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85')`,
+            backgroundImage: `linear-gradient(rgba(5, 5, 5, 0.7), rgba(5, 5, 5, 0.9)), url('https://images.unsplash.com/photo-1587930708915-55a36837263b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         />
         
-        {/* 3D Hero Scene */}
-        <div className="absolute inset-0 z-0 opacity-40">
-          <Hero3DScene />
+        {/* 3D Scroll-Triggered Scene */}
+        <div className="absolute inset-0 z-0 opacity-50">
+          <Hero3DScrollScene />
         </div>
         
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-void opacity-80 z-0" />
@@ -88,22 +114,15 @@ export default function Home() {
             transition={{ delay: 0.6 }}
             className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto leading-relaxed"
           >
-            Bold. Edgy. Futuristic. Define your style with our exclusive streetwear and anime collections.
+            Scroll to unfold. Bold. Edgy. Futuristic.
           </motion.p>
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
+          {/* CTA appears after scroll */}
+          <div ref={ctaRef} className="opacity-0">
             <Link to="/shop">
-              <CyberButton data-testid="hero-shop-now-button">Shop Now</CyberButton>
+              <CyberButton data-testid="shop-the-drop-button">Shop the Drop</CyberButton>
             </Link>
-            <Link to="/custom">
-              <CyberButton variant="secondary" data-testid="hero-custom-design-button">Custom Design</CyberButton>
-            </Link>
-          </motion.div>
+          </div>
         </motion.div>
       </section>
 

@@ -3,9 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { CyberButton } from '../components/CyberButton';
+import { Product3DPreview } from '../components/Product3DPreview';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Color name to hex mapping
+const colorMap = {
+  'Black': '#1a1a1a',
+  'White': '#f5f5f5',
+  'Navy': '#1e3a5f',
+  'Gray': '#6b7280',
+  'Red': '#dc2626',
+  'Blue': '#2563eb'
+};
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -17,6 +28,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [show3DPreview, setShow3DPreview] = useState(true);
 
   useEffect(() => {
     loadProduct();
@@ -85,34 +97,74 @@ export default function ProductDetail() {
     <div className="min-h-screen pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Images */}
+          {/* Images & 3D Preview */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="aspect-[3/4] bg-void-card border border-white/5 mb-4 overflow-hidden">
-              <img
-                src={images[selectedImage]}
-                alt={product.name}
-                data-testid="product-main-image"
-                className="w-full h-full object-cover"
-              />
+            {/* Toggle between image and 3D */}
+            <div className="mb-4 flex gap-3">
+              <button
+                onClick={() => setShow3DPreview(false)}
+                className={`px-4 py-2 font-mono text-xs uppercase tracking-widest border transition-colors ${
+                  !show3DPreview
+                    ? 'bg-cyber-cyan text-black border-cyber-cyan'
+                    : 'bg-transparent text-white border-white/20 hover:border-cyber-cyan'
+                }`}
+              >
+                Images
+              </button>
+              <button
+                onClick={() => setShow3DPreview(true)}
+                data-testid="toggle-3d-preview"
+                className={`px-4 py-2 font-mono text-xs uppercase tracking-widest border transition-colors ${
+                  show3DPreview
+                    ? 'bg-cyber-cyan text-black border-cyber-cyan'
+                    : 'bg-transparent text-white border-white/20 hover:border-cyber-cyan'
+                }`}
+              >
+                3D Preview
+              </button>
             </div>
-            {images.length > 1 && (
-              <div className="grid grid-cols-4 gap-4">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`aspect-square border ${
-                      selectedImage === idx ? 'border-cyber-cyan' : 'border-white/10'
-                    } overflow-hidden`}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+
+            {show3DPreview ? (
+              <div className="aspect-[3/4] bg-void-card border border-cyber-cyan/30 overflow-hidden" data-testid="product-3d-preview">
+                <Product3DPreview
+                  color={colorMap[selectedColor] || '#1a1a1a'}
+                  size={selectedSize}
+                  productType={product.name.toLowerCase().includes('hoodie') ? 'hoodie' : product.name.toLowerCase().includes('cap') ? 'cap' : 'tshirt'}
+                />
+                <p className="text-center font-mono text-xs text-zinc-500 mt-2">
+                  Real-time 3D preview • Auto-rotating
+                </p>
               </div>
+            ) : (
+              <>
+                <div className="aspect-[3/4] bg-void-card border border-white/5 mb-4 overflow-hidden">
+                  <img
+                    src={images[selectedImage]}
+                    alt={product.name}
+                    data-testid="product-main-image"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {images.length > 1 && (
+                  <div className="grid grid-cols-4 gap-4">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedImage(idx)}
+                        className={`aspect-square border ${
+                          selectedImage === idx ? 'border-cyber-cyan' : 'border-white/10'
+                        } overflow-hidden`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
 

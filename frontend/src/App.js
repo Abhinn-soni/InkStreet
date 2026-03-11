@@ -1,9 +1,11 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from 'sonner';
+import { useState } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { ChatWidget } from './components/ChatWidget';
+import { LoadingScreen } from './components/LoadingScreen';
 
 // Pages
 import Home from './pages/Home';
@@ -19,8 +21,12 @@ import Policy from './pages/Policy';
 import Admin from './pages/Admin';
 
 function App() {
+  const [loadingComplete, setLoadingComplete] = useState(false);
+
   return (
     <div className="App min-h-screen bg-void text-white">
+      <LoadingScreen onLoadingComplete={() => setLoadingComplete(true)} />
+      
       <Toaster
         position="top-right"
         toastOptions={{
