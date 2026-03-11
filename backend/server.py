@@ -1037,13 +1037,12 @@ async def mark_reminder_sent(cart_id: str, admin: Dict = Depends(get_admin_user)
 #         return {
 #             "response": "I'm having trouble connecting right now. Please try again later or contact our support team.",
 #             "session_id": session_id
-    @api_router.post("/chatbot")
-    async def chatbot(chat_req: ChatRequest):
+@api_router.post("/chatbot")
+async def chatbot(chat_req: ChatRequest):
     return {
         "response": "Chatbot is temporarily unavailable.",
         "session_id": chat_req.session_id
-         }
-
+    }  
 # ============== POLICY ENDPOINTS ==============
 
 @api_router.get("/policies/{policy_type}", response_model=Policy)
