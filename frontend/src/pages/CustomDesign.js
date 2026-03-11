@@ -5,6 +5,7 @@ import { FiUpload } from 'react-icons/fi';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { CustomDesign3D } from '../components/CustomDesign3D';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -88,33 +89,16 @@ export default function CustomDesign() {
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Preview */}
+            {/* 3D Preview */}
             <div>
               <div 
-                className="bg-void-card border border-white/5 aspect-square flex items-center justify-center relative overflow-hidden" 
-                data-testid="design-preview"
+                className="bg-void-card border border-cyber-cyan/30 aspect-square relative overflow-hidden" 
+                data-testid="3d-preview"
               >
-                {uploadedImage ? (
-                  <div className="relative w-full h-full flex items-center justify-center bg-zinc-900">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-64 h-80 bg-zinc-800 relative">
-                        <img
-                          src={uploadedImage}
-                          alt="Your design"
-                          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-48 max-h-48 object-contain"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-64 h-80 bg-zinc-800 mx-auto mb-4"></div>
-                    <p className="font-mono text-sm text-zinc-500">Upload a design to preview</p>
-                  </div>
-                )}
+                <CustomDesign3D designImage={uploadedImage} />
               </div>
               <p className="font-mono text-xs text-zinc-500 mt-4 text-center">
-                Preview your design on apparel
+                {uploadedImage ? 'Drag to rotate • Auto-spinning enabled' : 'Upload a design to see 3D preview'}
               </p>
             </div>
 

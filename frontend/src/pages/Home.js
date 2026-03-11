@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { ProductCard } from '../components/ProductCard';
 import { CyberButton } from '../components/CyberButton';
+import { CyberParticles } from '../components/CyberParticles';
+import { Hero3DScene } from '../components/Hero3DScene';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -30,17 +32,30 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      {/* Cyber Particles Background */}
+      <CyberParticles />
+      
       {/* Hero Section */}
       <section
         data-testid="hero-section"
         className="relative h-screen flex items-center justify-center overflow-hidden"
-        style={{
-          backgroundImage: `linear-gradient(rgba(5, 5, 5, 0.5), rgba(5, 5, 5, 0.8)), url('https://images.unsplash.com/photo-1587930708915-55a36837263b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-void opacity-80" />
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(5, 5, 5, 0.6), rgba(5, 5, 5, 0.9)), url('https://images.unsplash.com/photo-1587930708915-55a36837263b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBzdHJlZXR3ZWFyJTIwZmFzaGlvbiUyMG1vZGVsJTIwbmVvbnxlbnwwfHx8fDE3NzMyMTE4ODF8MA&ixlib=rb-4.1.0&q=85')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
+        
+        {/* 3D Hero Scene */}
+        <div className="absolute inset-0 z-0 opacity-40">
+          <Hero3DScene />
+        </div>
+        
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-void opacity-80 z-0" />
         
         <motion.div
           initial={{ opacity: 0, y: 30 }}
