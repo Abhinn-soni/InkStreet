@@ -3,6 +3,7 @@ import { FiHeart } from 'react-icons/fi';
 import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { LimitedEditionLabel } from './LimitedEditionBadge';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -57,6 +58,9 @@ export const ProductCard = ({ product }) => {
       >
         <FiHeart size={18} className={isWishlisted ? 'fill-cyber-cyan text-cyber-cyan' : 'text-white'} />
       </button>
+
+      {/* Limited Edition Label */}
+      <LimitedEditionLabel isLimitedEdition={product.is_limited_edition} />
 
       {/* Image */}
       <div className="aspect-[3/4] overflow-hidden relative">

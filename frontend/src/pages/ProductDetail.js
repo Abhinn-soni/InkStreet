@@ -5,6 +5,7 @@ import axios from 'axios';
 import { CyberButton } from '../components/CyberButton';
 import { Product3DPreview } from '../components/Product3DPreview';
 import { ReviewSection } from '../components/ReviewSection';
+import { LimitedEditionBadge } from '../components/LimitedEditionBadge';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -196,6 +197,11 @@ export default function ProductDetail() {
                 {product.description}
               </p>
             )}
+
+            {/* Limited Edition Badge */}
+            <div className="mb-8">
+              <LimitedEditionBadge product={product} />
+            </div>
 
             {/* Size Selector */}
             <div className="mb-6">

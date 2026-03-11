@@ -16,9 +16,16 @@ export default function Admin() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [abandonedCarts, setAbandonedCarts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // New category/product forms
+  // New coupon/abandoned cart forms
+  const [showCouponForm, setShowCouponForm] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    code: '', discount_type: 'percentage', discount_value: 0,
+    min_purchase: 0, max_uses: 0, valid_until: ''
+  });
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [categoryForm, setCategoryForm] = useState({ name: '', slug: '', description: '', image_url: '' });
@@ -43,12 +50,14 @@ export default function Admin() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [statsRes, catRes, prodRes, ordersRes, reviewsRes] = await Promise.all([
+      const [statsRes, catRes, prodRes, ordersRes, reviewsRes, couponsRes, abandonedRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/categories`, { headers }),
         axios.get(`${API}/products`, { headers }),
         axios.get(`${API}/admin/orders`, { headers }),
-        axios.get(`${API}/admin/reviews`, { headers })
+        axios.get(`${API}/admin/reviews`, { headers }),
+        axios.get(`${API}/admin/coupons`, { headers }),
+        axios.get(`${API}/admin/abandoned-carts`, { headers })
       ]);
 
       setStats(statsRes.data);
@@ -56,6 +65,8 @@ export default function Admin() {
       setProducts(prodRes.data);
       setOrders(ordersRes.data);
       setReviews(reviewsRes.data);
+      setCoupons(couponsRes.data);
+      setAbandonedCarts(abandonedRes.data);
     } catch (err) {
       console.error('Error loading admin data:', err);
       toast.error('Failed to load admin data');
@@ -149,6 +160,36 @@ export default function Admin() {
     }
   };
 
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/admin/coupons`, couponForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Coupon created!');
+      setShowCouponForm(false);
+      setCouponForm({ code: '', discount_type: 'percentage', discount_value: 0, min_purchase: 0, max_uses: 0, valid_until: '' });
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to create coupon');
+    }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (!confirm('Delete this coupon?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/coupons/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Coupon deleted');
+      loadData();
+    } catch (err) {
+      toast.error('Failed to delete coupon');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -171,8 +212,8 @@ export default function Admin() {
           </h1>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-8 border-b border-white/10" data-testid="admin-tabs">
-            {['dashboard', 'categories', 'products', 'orders', 'reviews'].map(tab => (
+          <div className="flex gap-4 mb-8 border-b border-white/10 overflow-x-auto" data-testid="admin-tabs">
+            {['dashboard', 'categories', 'products', 'orders', 'reviews', 'coupons', 'abandoned-carts'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -439,6 +480,79 @@ export default function Admin() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Coupons Tab */}
+          {activeTab === 'coupons' && (
+            <div data-testid="coupons-section">
+              <div className="mb-6">
+                <CyberButton onClick={() => setShowCouponForm(!showCouponForm)} data-testid="add-coupon-button">
+                  <FiPlus className="inline mr-2" /> Create Coupon
+                </CyberButton>
+              </div>
+
+              {showCouponForm && (
+                <form onSubmit={handleCreateCoupon} className="bg-void-card border border-white/5 p-6 mb-8 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="Coupon Code" value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} data-testid="coupon-code-input" required className="bg-transparent border-b border-white/20 px-0 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono uppercase" />
+                    <select value={couponForm.discount_type} onChange={(e) => setCouponForm({ ...couponForm, discount_type: e.target.value })} className="bg-void-surface border border-white/20 px-3 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono">
+                      <option value="percentage">Percentage</option>
+                      <option value="fixed">Fixed Amount</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <input type="number" placeholder="Discount Value" value={couponForm.discount_value} onChange={(e) => setCouponForm({ ...couponForm, discount_value: parseFloat(e.target.value) })} required className="bg-transparent border-b border-white/20 px-0 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono" />
+                    <input type="number" placeholder="Min Purchase (₹)" value={couponForm.min_purchase} onChange={(e) => setCouponForm({ ...couponForm, min_purchase: parseFloat(e.target.value) })} className="bg-transparent border-b border-white/20 px-0 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono" />
+                    <input type="number" placeholder="Max Uses (0=unlimited)" value={couponForm.max_uses} onChange={(e) => setCouponForm({ ...couponForm, max_uses: parseInt(e.target.value) })} className="bg-transparent border-b border-white/20 px-0 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono" />
+                  </div>
+                  <input type="datetime-local" value={couponForm.valid_until} onChange={(e) => setCouponForm({ ...couponForm, valid_until: e.target.value })} className="w-full bg-transparent border-b border-white/20 px-0 py-3 text-white focus:border-cyber-cyan focus:outline-none font-mono" />
+                  <CyberButton type="submit" data-testid="save-coupon-button">Create Coupon</CyberButton>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {coupons.map(coupon => (
+                  <div key={coupon.id} className="bg-void-card border border-white/5 p-6">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-mono text-xl font-bold text-cyber-cyan">{coupon.code}</h3>
+                        <p className="text-sm text-zinc-400">{coupon.discount_type === 'percentage' ? `${coupon.discount_value}% off` : `₹${coupon.discount_value} off`}</p>
+                      </div>
+                      <button onClick={() => handleDeleteCoupon(coupon.id)} data-testid={`delete-coupon-${coupon.id}`} className="text-zinc-400 hover:text-cyber-red transition-colors"><FiTrash2 size={20} /></button>
+                    </div>
+                    <div className="text-xs space-y-1 text-zinc-500">
+                      <p>Min Purchase: ₹{coupon.min_purchase}</p>
+                      <p>Uses: {coupon.uses_count} / {coupon.max_uses || '∞'}</p>
+                      <p>Status: <span className={coupon.is_active ? 'text-cyber-cyan' : 'text-zinc-600'}>{coupon.is_active ? 'Active' : 'Inactive'}</span></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Abandoned Carts Tab */}
+          {activeTab === 'abandoned-carts' && (
+            <div data-testid="abandoned-carts-section">
+              <p className="font-mono text-sm text-zinc-400 mb-6">Carts abandoned in last 7 days: {abandonedCarts.length}</p>
+              <div className="space-y-4">
+                {abandonedCarts.map(cart => (
+                  <div key={cart.id} className="bg-void-card border border-white/5 p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-syne font-bold">{cart.user_email}</p>
+                        <p className="text-sm text-zinc-400">{cart.cart_items.length} items • ₹{cart.cart_total.toFixed(2)}</p>
+                        <p className="text-xs text-zinc-500 mt-1">Last updated: {new Date(cart.last_updated).toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        {cart.reminder_sent ? (<span className="text-xs text-cyber-cyan">Reminder Sent</span>) : (<span className="text-xs text-zinc-500">No Reminder</span>)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {abandonedCarts.length === 0 && (<p className="text-center text-zinc-400 py-12">No abandoned carts</p>)}
+              </div>
             </div>
           )}
         </motion.div>

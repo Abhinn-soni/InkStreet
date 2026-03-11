@@ -102,6 +102,10 @@ class Product(BaseModel):
     colors: List[str] = ["Black", "White"]
     stock: int = 100
     is_customizable: bool = False
+    is_limited_edition: bool = False
+    drop_date: Optional[datetime] = None
+    drop_ends_at: Optional[datetime] = None
+    limited_stock: Optional[int] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProductCreate(BaseModel):
@@ -115,6 +119,10 @@ class ProductCreate(BaseModel):
     colors: List[str] = ["Black", "White"]
     stock: int = 100
     is_customizable: bool = False
+    is_limited_edition: bool = False
+    drop_date: Optional[str] = None
+    drop_ends_at: Optional[str] = None
+    limited_stock: Optional[int] = None
 
 class CartItem(BaseModel):
     product_id: str
@@ -197,6 +205,44 @@ class ReviewStats(BaseModel):
 class HelpfulVote(BaseModel):
     review_id: str
     is_helpful: bool
+
+class Coupon(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str  # Coupon code (e.g., "STREETDROP20")
+    discount_type: str  # "percentage" or "fixed"
+    discount_value: float  # 20 (for 20%) or 200 (for ₹200 off)
+    min_purchase: float = 0  # Minimum cart value required
+    max_uses: int = 0  # 0 = unlimited
+    uses_count: int = 0
+    valid_from: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    valid_until: Optional[datetime] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CouponCreate(BaseModel):
+    code: str
+    discount_type: str
+    discount_value: float
+    min_purchase: float = 0
+    max_uses: int = 0
+    valid_until: Optional[str] = None
+
+class CouponValidation(BaseModel):
+    code: str
+    cart_total: float
+
+class AbandonedCart(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_email: str
+    cart_items: List[CartItem]
+    cart_total: float
+    last_updated: datetime
+    reminder_sent: bool = False
+    reminder_sent_at: Optional[datetime] = None
+    recovered: bool = False
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
@@ -751,6 +797,187 @@ async def admin_update_review(
         {"$set": {"comment": comment, "rating": rating}}
     )
     return {"message": "Review updated"}
+
+
+# ============== COUPON ENDPOINTS ==============
+
+@api_router.get("/coupons/validate")
+async def validate_coupon(validation: CouponValidation, user: Dict = Depends(get_current_user)):
+    coupon = await db.coupons.find_one({"code": validation.code.upper()}, {"_id": 0})
+    
+    if not coupon:
+        raise HTTPException(status_code=404, detail="Invalid coupon code")
+    
+    if not coupon.get('is_active'):
+        raise HTTPException(status_code=400, detail="This coupon is no longer active")
+    
+    # Check expiry
+    if coupon.get('valid_until'):
+        valid_until = datetime.fromisoformat(coupon['valid_until']) if isinstance(coupon['valid_until'], str) else coupon['valid_until']
+        if datetime.now(timezone.utc) > valid_until:
+            raise HTTPException(status_code=400, detail="This coupon has expired")
+    
+    # Check uses limit
+    if coupon.get('max_uses', 0) > 0 and coupon.get('uses_count', 0) >= coupon['max_uses']:
+        raise HTTPException(status_code=400, detail="This coupon has reached its usage limit")
+    
+    # Check minimum purchase
+    if validation.cart_total < coupon.get('min_purchase', 0):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Minimum purchase of ₹{coupon['min_purchase']} required"
+        )
+    
+    # Calculate discount
+    if coupon['discount_type'] == 'percentage':
+        discount = (validation.cart_total * coupon['discount_value']) / 100
+    else:  # fixed
+        discount = coupon['discount_value']
+    
+    return {
+        "valid": True,
+        "discount": round(discount, 2),
+        "code": coupon['code'],
+        "discount_type": coupon['discount_type'],
+        "discount_value": coupon['discount_value']
+    }
+
+@api_router.post("/coupons/apply")
+async def apply_coupon(code: str, user: Dict = Depends(get_current_user)):
+    coupon = await db.coupons.find_one({"code": code.upper()}, {"_id": 0})
+    
+    if not coupon:
+        raise HTTPException(status_code=404, detail="Invalid coupon code")
+    
+    # Increment usage count
+    await db.coupons.update_one(
+        {"code": code.upper()},
+        {"$inc": {"uses_count": 1}}
+    )
+    
+    return {"message": "Coupon applied successfully"}
+
+# ============== ADMIN COUPON ENDPOINTS ==============
+
+@api_router.get("/admin/coupons", response_model=List[Coupon])
+async def admin_get_coupons(admin: Dict = Depends(get_admin_user)):
+    coupons = await db.coupons.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for coupon in coupons:
+        if isinstance(coupon.get('created_at'), str):
+            coupon['created_at'] = datetime.fromisoformat(coupon['created_at'])
+        if isinstance(coupon.get('valid_from'), str):
+            coupon['valid_from'] = datetime.fromisoformat(coupon['valid_from'])
+        if coupon.get('valid_until') and isinstance(coupon['valid_until'], str):
+            coupon['valid_until'] = datetime.fromisoformat(coupon['valid_until'])
+    return coupons
+
+@api_router.post("/admin/coupons", response_model=Coupon)
+async def admin_create_coupon(coupon_data: CouponCreate, admin: Dict = Depends(get_admin_user)):
+    # Check if code already exists
+    existing = await db.coupons.find_one({"code": coupon_data.code.upper()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Coupon code already exists")
+    
+    coupon_dict = coupon_data.model_dump()
+    coupon_dict['code'] = coupon_dict['code'].upper()
+    
+    # Parse valid_until if provided
+    if coupon_dict.get('valid_until'):
+        try:
+            coupon_dict['valid_until'] = datetime.fromisoformat(coupon_dict['valid_until'])
+        except:
+            coupon_dict['valid_until'] = None
+    
+    coupon = Coupon(**coupon_dict)
+    doc = coupon.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['valid_from'] = doc['valid_from'].isoformat()
+    if doc.get('valid_until'):
+        doc['valid_until'] = doc['valid_until'].isoformat()
+    
+    await db.coupons.insert_one(doc)
+    return coupon
+
+@api_router.delete("/admin/coupons/{coupon_id}")
+async def admin_delete_coupon(coupon_id: str, admin: Dict = Depends(get_admin_user)):
+    result = await db.coupons.delete_one({"id": coupon_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Coupon not found")
+    return {"message": "Coupon deleted"}
+
+@api_router.put("/admin/coupons/{coupon_id}/toggle")
+async def admin_toggle_coupon(coupon_id: str, admin: Dict = Depends(get_admin_user)):
+    coupon = await db.coupons.find_one({"id": coupon_id})
+    if not coupon:
+        raise HTTPException(status_code=404, detail="Coupon not found")
+    
+    new_status = not coupon.get('is_active', True)
+    await db.coupons.update_one({"id": coupon_id}, {"$set": {"is_active": new_status}})
+    return {"message": f"Coupon {'activated' if new_status else 'deactivated'}"}
+
+# ============== ABANDONED CART ENDPOINTS ==============
+
+@api_router.post("/cart/track-abandoned")
+async def track_abandoned_cart(user: Dict = Depends(get_current_user)):
+    """Track cart updates to detect abandonment"""
+    cart = await db.carts.find_one({"user_id": user['id']}, {"_id": 0})
+    
+    if not cart or not cart.get('items'):
+        return {"message": "No items in cart"}
+    
+    # Calculate cart total
+    total = 0
+    for item in cart['items']:
+        product = await db.products.find_one({"id": item['product_id']}, {"_id": 0, "price": 1})
+        if product:
+            total += product['price'] * item['quantity']
+    
+    # Check if abandoned cart record exists
+    existing = await db.abandoned_carts.find_one({"user_id": user['id']})
+    
+    abandoned_cart = {
+        "user_id": user['id'],
+        "user_email": user['email'],
+        "cart_items": cart['items'],
+        "cart_total": total,
+        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "reminder_sent": False,
+        "recovered": False
+    }
+    
+    if existing:
+        await db.abandoned_carts.update_one(
+            {"user_id": user['id']},
+            {"$set": abandoned_cart}
+        )
+    else:
+        abandoned_cart['id'] = str(uuid.uuid4())
+        await db.abandoned_carts.insert_one(abandoned_cart)
+    
+    return {"message": "Cart tracked"}
+
+@api_router.get("/admin/abandoned-carts")
+async def admin_get_abandoned_carts(admin: Dict = Depends(get_admin_user)):
+    """Get all abandoned carts for last 7 days"""
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    carts = await db.abandoned_carts.find({
+        "last_updated": {"$gte": cutoff_date.isoformat()},
+        "recovered": False
+    }, {"_id": 0}).sort("last_updated", -1).to_list(1000)
+    
+    return carts
+
+@api_router.post("/admin/abandoned-carts/{cart_id}/mark-reminder-sent")
+async def mark_reminder_sent(cart_id: str, admin: Dict = Depends(get_admin_user)):
+    await db.abandoned_carts.update_one(
+        {"id": cart_id},
+        {"$set": {
+            "reminder_sent": True,
+            "reminder_sent_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    return {"message": "Reminder marked as sent"}
 
 # ============== CHATBOT ENDPOINT ==============
 

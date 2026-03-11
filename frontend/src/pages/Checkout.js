@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { CyberButton } from '../components/CyberButton';
+import { CouponInput } from '../components/CouponInput';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -12,6 +13,7 @@ export default function Checkout() {
   const [cart, setCart] = useState(null);
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [shippingAddress, setShippingAddress] = useState({
     name: '',
     phone: '',
@@ -58,6 +60,21 @@ export default function Checkout() {
   };
 
   const calculateTotal = () => {
+    if (!cart || !cart.items) return 0;
+    const subtotal = cart.items.reduce((total, item) => {
+      const product = products[item.product_id];
+      return total + (product ? product.price * item.quantity : 0);
+    }, 0);
+    
+    // Apply coupon discount
+    if (appliedCoupon) {
+      return Math.max(0, subtotal - appliedCoupon.discount);
+    }
+    
+    return subtotal;
+  };
+
+  const getSubtotal = () => {
     if (!cart || !cart.items) return 0;
     return cart.items.reduce((total, item) => {
       const product = products[item.product_id];
@@ -283,11 +300,23 @@ export default function Checkout() {
               <div className="bg-void-card border border-white/5 p-6 sticky top-24">
                 <h3 className="font-syne text-xl font-bold mb-6">Order Summary</h3>
                 
+                {/* Coupon Input */}
+                <CouponInput 
+                  cartTotal={getSubtotal()} 
+                  onCouponApplied={setAppliedCoupon}
+                />
+                
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between font-mono text-sm">
                     <span className="text-zinc-400">Subtotal</span>
-                    <span>₹{calculateTotal().toFixed(2)}</span>
+                    <span>₹{getSubtotal().toFixed(2)}</span>
                   </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between font-mono text-sm text-cyber-cyan">
+                      <span>Discount ({appliedCoupon.code})</span>
+                      <span>-₹{appliedCoupon.discount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-mono text-sm">
                     <span className="text-zinc-400">Shipping</span>
                     <span className="text-cyber-cyan">FREE</span>
