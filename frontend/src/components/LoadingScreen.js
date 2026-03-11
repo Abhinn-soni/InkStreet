@@ -5,13 +5,13 @@ export const LoadingScreen = ({ onLoadingComplete }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time - in production, this would wait for assets
+    // Show loading for 2.5 seconds
     const timer = setTimeout(() => {
       setIsLoading(false);
       if (onLoadingComplete) {
         onLoadingComplete();
       }
-    }, 2000);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, [onLoadingComplete]);

@@ -77,7 +77,7 @@ export default function Home() {
         />
         
         {/* 3D Scroll-Triggered Scene */}
-        <div className="absolute inset-0 z-0 opacity-50">
+        <div className="absolute inset-0 z-0 opacity-70">
           <Hero3DScrollScene />
         </div>
         

@@ -137,7 +137,7 @@ export const Hero3DScrollScene = () => {
         onUpdate: (self) => {
           const progress = self.progress;
           
-          // Unfold T-shirt
+          // Unfold T-shirt with more dramatic scale change
           tshirtGroup.scale.set(
             0.5 + progress * 0.5,
             0.5 + progress * 0.5,
